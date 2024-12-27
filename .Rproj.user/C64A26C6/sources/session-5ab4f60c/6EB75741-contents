@@ -1,0 +1,42 @@
+#' Perform One-Way ANOVA
+#'
+#' This function manually calculates the one-way ANOVA table.
+#' @param data A data frame containing the dataset.
+#' @param response A string specifying the response variable (numeric).
+#' @param factor A string specifying the factor variable (categorical).
+#' @return A data frame containing the ANOVA table.
+#' @export
+one_way_anova <- function(data, response, factor) {
+  # Split data into groups
+  groups <- split(data[[response]], data[[factor]])
+  overall_mean <- mean(data[[response]])
+
+  # Sum of Squares Between (SSB)
+  ss_between <- sum(sapply(groups, length) * (sapply(groups, mean) - overall_mean)^2)
+
+  # Sum of Squares Within (SSW)
+  ss_within <- sum(unlist(lapply(groups, function(group) sum((group - mean(group))^2))))
+
+  # Degrees of Freedom
+  df_between <- length(groups) - 1
+  df_within <- nrow(data) - length(groups)
+
+  # Mean Squares
+  ms_between <- ss_between / df_between
+  ms_within <- ss_within / df_within
+
+  # F-statistic and p-value
+  f_stat <- ms_between / ms_within
+  p_value <- pf(f_stat, df_between, df_within, lower.tail = FALSE)
+
+  # Construct ANOVA table
+  anova_table <- data.frame(
+    Df = c(df_between, df_within),
+    `Sum Sq` = c(ss_between, ss_within),
+    `Mean Sq` = c(ms_between, ms_within),
+    `F value` = c(f_stat, NA),
+    `Pr(>F)` = c(p_value, NA)
+  )
+
+  return(anova_table)
+}

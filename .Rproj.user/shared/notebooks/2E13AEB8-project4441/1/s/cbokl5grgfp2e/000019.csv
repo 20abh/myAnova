@@ -1,0 +1,7 @@
+"0"," 
+# Natural Cubic Splines
+natural_spline_model <- lm(train_data[[target]] ~ ns(train_data[, predictors[1]], df = 5, Boundary.knots = c(min(train_data[, predictors[1]]), max(train_data[, predictors[1]]))))
+"
+"2","Error in ns(train_data[, predictors[1]], df = 5, Boundary.knots = c(min(train_data[,  : 
+  all interior knots match left boundary knot
+"

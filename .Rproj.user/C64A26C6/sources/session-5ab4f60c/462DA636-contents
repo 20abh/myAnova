@@ -1,0 +1,540 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+# “Analysis of the Communities and Crime Dataset Using Supervised Statistical Learning Techniques” 
+
+#Authors: 
+#Ahmed Al Dhounai 129466 
+#Muntasar Al Bahri 130220 
+#Mohammed Al Shaibani 122637 
+#Sultan Qaboos University, Department of Statistics 
+
+
+#Introduction 
+#Brief overview of the project 
+#This project focuses on using supervised learning methods to analyze a dataset from the UCI Machine Learning Repository. The goal is to build, analyze and evaluate models that help us predict outcomes based on the available data. By doing so, we seek to understand and study the effectiveness of the practical application of statistical learning techniques on real-life problems. 
+
+
+#The problem being addressed 
+#The project places importance on studying the main factors influencing crime rates in different communities. By analyzing data that include socio-economic, demographic, and law enforcement variables, we aim to identify patterns and build predictive models for crime-related metrics. The insights and observations we see in these models can help allocate resources and direct effective strategies and policies in an efficient manner that reduces crime rates and enhances security among individuals in different communities. 
+
+
+#The assigned dataset 
+#The Communities and Crime Dataset contains information about multiple U.S. communities, including demographic, socio-economic, and law enforcement data. The dataset has over 100 variables describing community characteristics. The target variable is related to crime metrics, and the dataset includes missing values that must be handled during preprocessing. This dataset is ideal for exploring supervised learning methods due to its size, complexity, and practical relevance
+
+
+
+
+
+#1: Random Seed Setup
+```{r random-seed}
+# Set the random seed equal to your student ID
+set.seed(130220)
+```
+
+
+#2: Data Splitting
+```{r data-splitting}
+# Load necessary libraries
+#install.packages("readxl", repos = "http://cran.us.r-project.org")
+library(readxl)
+
+# Load the dataset
+data <- read_excel("communities_cleaned.xlsx")
+
+# Inspect the dataset
+head(data)
+
+# Define the response variable
+response_variable <- "ViolentCrimesPerPop"
+
+# Split the data into training and testing subsets
+set.seed(130220)  # Ensure reproducibility
+
+# Define split ratio
+split_ratio <- 0.7  # 70% for training, 30% for testing
+
+# Create indices for training data
+train_indices <- sample(1:nrow(data), size = split_ratio * nrow(data))
+
+# Split the data
+train_data <- data[train_indices, ]
+test_data <- data[-train_indices, ]
+
+# Justification: A 70-30 split is a common practice to ensure sufficient data for training 
+# while retaining a substantial amount for testing.
+```
+```{r , Data Splitting }
+
+split_ratio <- 0.8
+
+# Create indices for the training set
+train_indices <- sample(1:nrow(data), size = floor(split_ratio * nrow(data)))
+
+# Split the data
+training_set <- data[train_indices, ]
+testing_set <- data[-train_indices, ]
+
+# Check dimensions
+cat("Training Set Size:", nrow(training_set), "\n")
+cat("Testing Set Size:", nrow(testing_set), "\n")
+
+```
+
+
+
+
+
+#3: Penalized Regression Models
+#3a. Lasso Regression
+```{r lasso-regression}
+# Install and load glmnet
+#install.packages("glmnet", repos = "http://cran.us.r-project.org")
+library(glmnet)
+#install.packages(Matrix)
+library(Matrix)
+# Prepare data for glmnet
+x_train <- as.matrix(train_data[, !names(train_data) %in% response_variable])
+y_train <- train_data[[response_variable]]
+
+x_test <- as.matrix(test_data[, !names(test_data) %in% response_variable])
+y_test <- test_data[[response_variable]]
+
+# Fit Lasso model with 5-fold cross-validation
+lasso_cv <- cv.glmnet(x_train, y_train, alpha = 1, family = "gaussian")
+
+# Optimal lambda
+lambda_lasso <- lasso_cv$lambda.min
+
+# Fit final model using selected lambda
+lasso_model <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_lasso)
+
+# Predict and evaluate performance
+lasso_predictions <- predict(lasso_model, s = lambda_lasso, newx = x_test)
+lasso_mse <- mean((y_test - lasso_predictions)^2)
+lasso_mse
+```
+```{r lasso-regression}
+#install.packages("glmnet") # Run if not already installed
+library(glmnet)
+# Assuming the last column is the response variable
+X <- as.matrix(data[ , -ncol(data)]) # Predictors
+Y <- as.matrix(data[ , ncol(data)]) # Response
+
+set.seed(130220) # For reproducibility
+lasso_model <- cv.glmnet(X, Y, alpha = 1, nfolds = 5)
+
+# Optimal lambda
+best_lambda <- lasso_model$lambda.min
+print(best_lambda)
+
+# Coefficients at optimal lambda
+coef(lasso_model, s = "lambda.min")
+
+# Make predictions
+predictions <- predict(lasso_model, s = "lambda.min", newx = X)
+
+plot(lasso_model)
+
+
+```
+
+
+
+
+
+#3b. Ridge Regression
+```{r ridge-regression}
+# Fit Ridge model with 5-fold cross-validation
+ridge_cv <- cv.glmnet(x_train, y_train, alpha = 0, family = "gaussian")
+
+# Optimal lambda
+lambda_ridge <- ridge_cv$lambda.min
+
+# Fit final model using selected lambda
+ridge_model <- glmnet(x_train, y_train, alpha = 0, lambda = lambda_ridge)
+
+# Predict and evaluate performance
+ridge_predictions <- predict(ridge_model, s = lambda_ridge, newx = x_test)
+ridge_mse <- mean((y_test - ridge_predictions)^2)
+ridge_mse
+```
+
+
+
+#4: Dimensionality Reduction Methods
+#4a. Principal Component Regression (PCR)
+```{r pcr}
+#install.packages("pls")
+library(pls)
+
+# Fit PCR model
+pcr_model <- pcr(ViolentCrimesPerPop ~ Feature_1 + Feature_3, data = train_data, scale = TRUE, validation = "CV")
+
+# Predict and evaluate performance
+pcr_predictions <- predict(pcr_model, test_data, ncomp = which.min(RMSEP(pcr_model)$val))
+pcr_mse <- mean((y_test - pcr_predictions)^2)
+pcr_mse
+```
+
+
+#4b. Partial Least Squares (PLS)
+```{r pls}
+# Fit PLS model
+pls_model <- plsr(ViolentCrimesPerPop ~ Feature_1 + Feature_3, data = train_data, scale = TRUE, validation = "CV")
+
+# Predict and evaluate performance
+pls_predictions <- predict(pls_model, test_data, ncomp = which.min(RMSEP(pls_model)$val))
+pls_mse <- mean((y_test - pls_predictions)^2)
+pls_mse
+```
+
+
+
+
+
+#5: Model Comparison for Variable Selection and Dimension Reduction
+```{r model-comparison}
+# Compare models based on MSE
+comparison <- data.frame(
+  Model = c("Lasso", "Ridge", "PCR", "PLS"),
+  MSE = c(lasso_mse, ridge_mse, pcr_mse, pls_mse)
+)
+comparison
+```
+
+
+
+# 6 Classification Section
+# 6a. k-Nearest Neighbors (kNN)
+```{r}
+library(class)
+normalize <- function(x) {
+  if (is.numeric(x)) {
+    (x - min(x)) / (max(x) - min(x))
+  } else {
+    x
+  }
+}
+
+normalized_train <- as.data.frame(lapply(train_data[, sapply(train_data, is.numeric)], normalize))
+normalized_test <- as.data.frame(lapply(test_data[, sapply(test_data, is.numeric)], normalize))
+normalized_train[[response_variable]] <- train_data[[response_variable]]
+normalized_test[[response_variable]] <- test_data[[response_variable]]
+
+k <- 5
+knn_predictions <- knn(
+  train = normalized_train[, !names(normalized_train) %in% response_variable],
+  test = normalized_test[, !names(normalized_test) %in% response_variable],
+  cl = train_data[[response_variable]],
+  k = k
+)
+
+knn_accuracy <- mean(knn_predictions == test_data[[response_variable]])
+print(paste("The key:", k))
+print(paste("knn_accuracy:", knn_accuracy))
+```
+
+
+# 6 Classification Section
+# 6b. Naïve Bayes
+```{r}
+library(e1071)
+nb_model <- naiveBayes(as.factor(ViolentCrimesPerPop) ~ ., data = train_data)
+nb_predictions <- predict(nb_model, test_data)
+nb_accuracy <- mean(nb_predictions == test_data[[response_variable]])
+print(paste("nb_accuracy:", nb_accuracy))
+```
+
+
+# 6 Classification Section
+# 6c. Logistic Regression
+```{r}
+log_model <- glm(as.factor(ViolentCrimesPerPop) ~ Feature_1, data = train_data, family = binomial)
+log_predictions <- predict(log_model, test_data, type = "response")
+log_predictions_class <- ifelse(log_predictions > 0.5, 1, 0)
+log_accuracy <- mean(log_predictions_class == test_data[[response_variable]])
+print(paste("log_accuracy:", log_accuracy))
+```
+
+
+# 6 Classification Section
+# 6d. Linear Discriminant Analysis (LDA)
+```{r}
+library(MASS)
+lda_model <- lda(as.factor(ViolentCrimesPerPop) ~ Feature_1, data = train_data)
+lda_predictions <- predict(lda_model, test_data)$class
+lda_accuracy <- mean(lda_predictions == test_data[[response_variable]])
+print(paste("lda_accuracy:", lda_accuracy))
+```
+
+
+# 6 Classification Section
+# 6e. Quadratic Discriminant Analysis (QDA)
+```{r}
+# Initialize global variable to ensure it exists
+model_accuracy <<- NA  
+
+# Check for small class sizes
+class_sizes <- table(train_data$ViolentCrimesPerPop) 
+min_class_size <- min(class_sizes)
+
+if (min_class_size <= 5) { # Adjust threshold as needed
+  warning("At least one class has fewer than 5 samples. QDA may be unstable.")
+  
+  # Attempt to use LDA as a fallback
+  tryCatch({
+    qda_model <- qda(as.factor(ViolentCrimesPerPop) ~ Feature_1, data = train_data)
+    qda_predictions <- predict(qda_model, test_data)$class
+    qda_accuracy <- mean(qda_predictions == test_data[[response_variable]])
+    
+    #cat("QDA Accuracy:", qda_accuracy, "\n") 
+    model_accuracy <<- qda_accuracy  # Save globally
+  }, error = function(e) {
+    warning("QDA failed. Using LDA instead.")
+    
+    lda_model <- lda(as.factor(ViolentCrimesPerPop) ~ Feature_1, data = train_data)
+    lda_predictions <- predict(lda_model, test_data)$class
+    lda_accuracy <- mean(lda_predictions == test_data[[response_variable]]) 
+    
+    #cat("LDA Accuracy:", lda_accuracy, "\n") 
+    model_accuracy <<- lda_accuracy  # Save globally
+  })
+} else {
+  # Proceed with QDA
+  qda_model <- qda(as.factor(ViolentCrimesPerPop) ~ Feature_1, data = train_data)
+  qda_predictions <- predict(qda_model, test_data)$class
+  qda_accuracy <- mean(qda_predictions == test_data[[response_variable]])
+  
+  #cat("QDA Accuracy:", qda_accuracy, "\n") 
+  model_accuracy <<- qda_accuracy  # Save globally
+}
+
+# Print final model accuracy to verify
+cat("Final Model Accuracy:", model_accuracy, "\n")
+```
+
+
+# Classification Performance Table
+```{r}
+classification_comparison <- data.frame(
+  Model = c("kNN", "Naïve Bayes", "Logistic Regression", "LDA", "QDA"),
+  Accuracy = c(knn_accuracy, nb_accuracy, log_accuracy, lda_accuracy, model_accuracy)
+)
+print(classification_comparison)
+```
+
+
+# Regression Section
+# 6a. k-Nearest Neighbors (kNN)
+```{r}
+k <- 5
+knn_predictions_reg <- knn(
+  train = normalized_train[, !names(normalized_train) %in% response_variable],
+  test = normalized_test[, !names(normalized_test) %in% response_variable],
+  cl = train_data[[response_variable]],
+  k = k
+)
+knn_mse <- mean((as.numeric(as.character(knn_predictions_reg)) - test_data[[response_variable]])^2)
+print(paste("the k:", k))
+print(paste("knn_mse:", knn_mse))
+```
+
+# Regression Section
+# 6b. Polynomial Regression
+```{r}
+poly_model <- lm(ViolentCrimesPerPop ~ poly(Feature_1, 2, raw = TRUE), data = train_data)
+poly_predictions <- predict(poly_model, newdata = test_data)
+poly_mse <- mean((y_test - poly_predictions)^2)
+print(paste("poly_mse:", poly_mse))
+```
+
+
+
+
+# Regression Section
+# 6c. Step Function Regression
+```{r}
+library(splines)
+step_model <- lm(ViolentCrimesPerPop ~ cut(Feature_1, breaks = 4), data = train_data)
+step_predictions <- predict(step_model, newdata = test_data)
+step_mse <- mean((y_test - step_predictions)^2)
+print(paste("step_mse:", step_mse))
+```
+
+
+
+# Regression Section
+# 6d. Cubic Splines
+```{r}
+cubic_model <- lm(ViolentCrimesPerPop ~ bs(Feature_1, df = 5), data = train_data)
+cubic_predictions <- predict(cubic_model, newdata = test_data)
+cubic_mse <- mean((y_test - cubic_predictions)^2)
+print(paste("cubic_mse:", cubic_mse))
+```
+
+
+
+
+# Regression Section
+# 6e. Natural Cubic Splines
+```{r}
+natural_cubic_model <- lm(ViolentCrimesPerPop ~ ns(Feature_1, df = 5), data = train_data)
+natural_cubic_predictions <- predict(natural_cubic_model, newdata = test_data)
+natural_cubic_mse <- mean((y_test - natural_cubic_predictions)^2)
+print(paste("natural_cubic_mse:", natural_cubic_mse))
+```
+
+
+
+
+
+# Regression Section
+# Regression Performance Table
+```{r}
+regression_comparison <- data.frame(
+  Model = c("kNN", "Polynomial Regression", "Step Function", "Cubic Splines", "Natural Cubic Splines"),
+  MSE = c(knn_mse, poly_mse, step_mse, cubic_mse, natural_cubic_mse)
+)
+print(regression_comparison)
+```
+
+
+
+
+
+
+# 7: Overall Performance Comparison
+```{r}
+library(ggplot2)
+classification_plot <- ggplot(classification_comparison, aes(x = Model, y = Accuracy)) +
+  geom_bar(stat = "identity", fill = "lightgreen") +
+  theme_minimal() +
+  labs(
+    title = "Classification Model Performance",
+    x = "Model",
+    y = "Accuracy"
+  )
+
+print(classification_plot)
+
+regression_plot <- ggplot(regression_comparison, aes(x = Model, y = MSE)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  theme_minimal() +
+  labs(
+    title = "Regression Model Performance",
+    x = "Model",
+    y = "Mean Squared Error (MSE)"
+  )
+
+print(regression_plot)
+
+```
+
+
+
+
+Results and Discussion
+
+Results from Penalized Regression Models
+Lasso Regression
+•	Mean Squared Error (MSE): 0.02243782
+•	Strengths:
+	Automatically selects the most relevant features by shrinking coefficients of less important variables to zero.
+	Reduces overfitting, especially in datasets with many predictors.
+•	Weaknesses:
+	May oversimplify the model by excluding variables that might contribute marginally to the prediction.
+Ridge Regression
+•	Mean Squared Error (MSE): 0.02246981
+•	Strengths:
+	Retains all predictors but shrinks their coefficients to mitigate multicollinearity.
+	Suitable for datasets with highly correlated predictors.
+•	Weaknesses:
+	Does not perform variable selection, potentially leading to less interpretable models compared to Lasso.
+Comparison of Lasso and Ridge
+	Both models achieved very similar MSE values, with Lasso performing slightly better.
+	Lasso’s feature selection advantage makes it preferable for interpretability in this context.
+
+
+
+Results from Dimensionality Reduction Methods
+Principal Component Regression (PCR)
+•	Mean Squared Error (MSE): 0.04843052
+•	Strengths:
+	Reduces dimensionality by transforming data into uncorrelated components.
+	Handles multicollinearity effectively.
+•	Weaknesses:
+	Components may not have a direct interpretation, making the model less transparent.
+	Performed worse than penalized regression models.
+Partial Least Squares (PLS)
+•	Mean Squared Error (MSE): 0.0484056
+•	Strengths:
+	Balances dimensionality reduction and maximizing correlation with the response variable.
+	Slightly better MSE compared to PCR.
+•	Weaknesses:
+	Interpretation of the components can still be challenging.
+	Performance was not competitive with Lasso or Ridge.
+Comparison of PCR and PLS
+•	Both methods had higher MSE compared to Lasso and Ridge.
+•	PLS slightly outperformed PCR, demonstrating better alignment with the response variable.
+
+
+
+Results from Classification Models
+Model	Accuracy
+kNN	0.1087
+Naïve Bayes	0.1104
+Logistic Regression	0.0150
+LDA	0.1070
+QDA	0.1070
+•  Key Observations:
+•	Overall, classification models exhibited poor performance, with low accuracy across all methods.
+•	Naïve Bayes achieved the highest accuracy (0.1104), but the improvement was marginal.
+•	Logistic Regression performed the worst, likely due to assumptions about linear relationships in the data.
+
+
+Results from Other Regression Models
+Model	MSE
+kNN	0.0384709
+Polynomial Regression	0.0473825
+Step Function	0.0463299
+Cubic Splines	0.0446604
+Natural Cubic Splines	0.0438113
+•  Key Observations:
+•	Natural Cubic Splines achieved the lowest MSE among these models, suggesting its effectiveness in capturing non-linear relationships.
+•	Polynomial Regression and Step Function were outperformed by Cubic Splines.
+•	While these models demonstrated competitive performance, they did not outperform Lasso in terms of MSE.
+
+
+Overall Performance Comparison
+•	Lasso Regression provided the best trade-off between model complexity, interpretability, and prediction accuracy.
+•	Natural Cubic Splines demonstrated strong performance in regression but lacked the feature selection capability of Lasso.
+•	Classification models were ineffective for this dataset, likely due to the nature of the response variable and class 
+
+
+Conclusion
+•	Key Findings:
+	Lasso Regression emerged as the most effective method, balancing accuracy and interpretability. Its ability to select important features makes it highly suitable for this dataset.
+	Dimensionality reduction techniques (PCR and PLS) were less effective compared to penalized regression.
+	Classification models underperformed, highlighting the difficulty of classifying crime rates based on the available features.
+•	Practical Insights:
+	The findings emphasize the importance of penalized regression techniques for datasets with numerous predictors and potential multicollinearity.
+	Policymakers can use Lasso-selected features to focus on key factors influencing crime rates, aiding in resource allocation and strategy development.
+
+
+
+
+References
+1- University of California, Irvine Machine Learning Repository. Communities and Crime Dataset.
+https://archive.ics.uci.edu/ml/datasets/communities%2Band%2Bcrime
+2-Friedman, J., Hastie, T., & Tibshirani, R. (2001). The Elements of Statistical Learning. Springer.
+https://web.stanford.edu/~hastie/ElemStatLearn/
+3-James, G., Witten, D., Hastie, T., & Tibshirani, R. (2013). An Introduction to Statistical Learning. Springer.
+https://www.statlearning.com/
+4-R Core Team. (2023). R: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing.
+https://www.r-project.org/
+5-Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer.
+https://link.springer.com/book/10.1007/978-0-387-98141-3

@@ -1,0 +1,8 @@
+test_that("calculate_anova computes ANOVA table correctly", {
+  data <- data.frame(Factor = c("A", "A", "B", "B", "C", "C"), Response = c(4, 5, 6, 5, 8, 7))
+
+  result <- calculate_anova(data, response = "Response", factor = "Factor")
+  expect_equal(round(result$`Sum Sq`[1], 2), 14.67)
+  expect_equal(round(result$`Sum Sq`[2], 2), 6.67)
+  expect_equal(round(result$`F value`[1], 2), 3.30)
+})

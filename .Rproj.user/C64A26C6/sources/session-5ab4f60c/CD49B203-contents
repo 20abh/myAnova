@@ -1,0 +1,7 @@
+test_that("test_anova_assumptions checks assumptions correctly", {
+  data <- data.frame(Factor = c("A", "A", "B", "B", "C", "C"), Response = c(4, 5, 6, 5, 8, 7))
+
+  assumptions <- test_anova_assumptions(data, response = "Response", factor = "Factor")
+  expect_true(assumptions$normality_test$p.value > 0.05)
+  expect_true(assumptions$homogeneity_test$`Pr(>F)`[1] > 0.05)
+})

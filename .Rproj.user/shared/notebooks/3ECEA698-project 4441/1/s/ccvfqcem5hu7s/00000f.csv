@@ -1,0 +1,6 @@
+"0","# Model Comparison"
+"0","model_comparison <- data.frame("
+"0","  Model = c(""Lasso"", ""Ridge"", ""PCR"", ""PLS""),"
+"0","  RMSE = c(lasso_rmse, ridge_rmse, pcr_rmse, pls_rmse)"
+"0",")"
+"0","print(model_comparison)"

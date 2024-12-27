@@ -1,0 +1,328 @@
+---
+title: "Blogfeedback project"
+author: "Salim nasser almazroui (137138)-abdullah Ahmed aldhahli (129190)- Ali alaamri(125879)"
+date: "2024-12-16"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+## Introduction
+
+The objective of this project is to apply supervised statistical learning methods to predict the number of comments that blog posts will receive in the next 24 hours. The dataset consists of blog posts published between 2010 and 2011, and the goal is to forecast the number of comments these posts will generate in the subsequent 24 hours.
+
+### Challenge
+The main challenge of this project lies in predicting blog post engagement based on a variety of features, including content, publication time, and historical data. The dataset spans multiple time periods, with training data from 2010 and 2011, and test data from February and March 2012. This temporal separation is important to ensure that the model generalizes well to unseen data, simulating a real-world setting where past data is used to predict future events.
+
+### Methodology
+Several machine learning techniques will be employed to tackle this problem, including:
+- **Lasso Regression**
+- **Ridge Regression**
+- **Principal Component Regression (PCR)**
+- **Partial Least Squares (PLS)**
+- **k-Nearest Neighbors (KNN)**
+- **Polynomial Regression**
+- **Splines**
+
+The models will be evaluated using Root Mean Squared Error (RMSE) to assess their ability to accurately predict the number of comments. 
+
+### Objective
+The goal of this project is to identify the most effective model for predicting blog post engagement. Additionally, this project will provide practical experience in implementing, interpreting, and comparing various supervised learning techniques, as well as handling challenges associated with temporal data and forecasting future events.
+
+
+```{r}
+# Load necessary libraries
+library(glmnet)
+library(caret)
+library(pls)
+library(splines)
+
+set.seed(129190)
+
+# 2. Load and Prepare Data
+train_data <- read.csv("C:/Users/HP/Desktop/intro/blogData_train.csv", header = FALSE)
+test_data <- read.csv("C:/Users/HP/Desktop/intro/test.csv", header = FALSE)
+
+# Take a random sample of 10,00 rows from train_data
+train_data <- train_data[sample(nrow(train_data), 1000), ]
+
+# Check the dimensions of the sampled dataset
+dim(train_data)
+
+# Handle Missing Data
+train_data[is.na(train_data)] <- 0
+test_data[is.na(test_data)] <- 0
+
+```
+
+
+# Lasso Regression
+```{r}
+target <- ncol(train_data)
+index <- createDataPartition(train_data[[target]], p = 0.8, list = FALSE)
+train_set <- train_data[index, ]
+validation_set <- train_data[-index, ]
+
+# 3. Penalized Regression Models
+# Lasso Regression
+lasso_cv <- cv.glmnet(as.matrix(train_set[,-target]), train_set[[target]], alpha = 1)
+best_lambda_lasso <- lasso_cv$lambda.min
+lasso_model <- glmnet(as.matrix(train_set[,-target]), train_set[[target]], alpha = 1, lambda = best_lambda_lasso)
+pred_lasso <- predict(lasso_model, as.matrix(validation_set[,-target]))
+lasso_rmse <- sqrt(mean((validation_set[[target]] - pred_lasso)^2))
+lasso_rmse
+# Cross-validation plot for Lasso
+plot(lasso_cv)
+title("Cross-Validation for Lasso Regression", line = 2.5)
+```
+
+
+
+# Ridge Regression
+```{r}
+
+# Load necessary libraries
+library(glmnet)
+
+# Ridge Regression
+ridge_cv <- cv.glmnet(as.matrix(train_set[,-target]), train_set[[target]], alpha = 0)
+best_lambda_ridge <- ridge_cv$lambda.min
+ridge_model <- glmnet(as.matrix(train_set[,-target]), train_set[[target]], alpha = 0, lambda = best_lambda_ridge)
+pred_ridge <- predict(ridge_model, as.matrix(validation_set[,-target]))
+
+# Compute RMSE for Ridge
+ridge_rmse <- sqrt(mean((validation_set[[target]] - pred_ridge)^2))
+cat("Ridge RMSE:", ridge_rmse, "\n")
+
+#plot
+plot(ridge_cv)
+title("Cross-Validation for Ridge Regression", line = 2.5)
+plot(ridge_model, xvar = "lambda", label = TRUE)
+title("Coefficient Path for Ridge Regression", line = 2.5)
+plot(validation_set[[target]], pred_ridge, main = "Predicted vs Actual (Ridge Regression)", 
+     xlab = "Actual", ylab = "Predicted", col = "blue", pch = 16)
+abline(a = 0, b = 1, col = "red")  # Add a 45-degree reference line
+
+```
+
+
+
+# 4. Dimensionality Reduction
+```{r}
+# Principal Component Regression (PCR)
+pcr_model <- pcr(train_set[[target]] ~ ., data = train_set, validation = "CV")
+pcr_pred <- predict(pcr_model, validation_set, ncomp = which.min(pcr_model$validation$PRESS))
+pcr_rmse <- sqrt(mean((validation_set[[target]] - pcr_pred)^2))
+pcr_rmse
+
+# Partial Least Squares (PLS)
+pls_model <- plsr(train_set[[target]] ~ ., data = train_set, validation = "CV")
+pls_pred <- predict(pls_model, validation_set, ncomp = which.min(pls_model$validation$PRESS))
+pls_rmse <- sqrt(mean((validation_set[[target]] - pls_pred)^2))
+pls_rmse
+```
+
+
+
+# Model Comparison
+```{r}
+# Model Comparison
+model_comparison <- data.frame(
+  Model = c("Lasso", "Ridge", "PCR", "PLS"),
+  RMSE = c(lasso_rmse, ridge_rmse, pcr_rmse, pls_rmse)
+)
+print(model_comparison)
+
+```
+
+
+# Additional Models
+```{r}
+# k-Nearest Neighbors
+knn_model <- train(train_set[,-target], train_set[[target]], method = "knn", tuneLength = 10)
+knn_pred <- predict(knn_model, validation_set[,-target])
+knn_rmse <- sqrt(mean((validation_set[[target]] - knn_pred)^2))
+
+knn_rmse
+```
+
+
+
+```{r}
+# Polynomial Regression (Degree 2)
+poly_model <- lm(train_set[[target]] ~ poly(train_set[, 1], degree = 2))  # Polynomial regression on first predictor
+poly_pred <- predict(poly_model, validation_set)
+poly_rmse <- sqrt(mean((validation_set[[target]] - poly_pred)^2))  # RMSE for Polynomial Regression
+poly_rmse
+
+```
+
+
+
+```{r}
+#Step Function Regression
+# Creating step function based on the first predictor variable
+step_model <- lm(train_set[[target]] ~ cut(train_set[, 1], breaks = 5))  # Create 5 intervals for step function
+step_pred <- predict(step_model, validation_set)
+step_rmse <- sqrt(mean((validation_set[[target]] - step_pred)^2))  # RMSE for Step Function Regression
+step_rmse
+```
+
+
+
+```{r}
+#9 Cubic Splines Regression
+# Fit cubic spline model on the first predictor variable
+cubic_spline_model <- lm(train_set[[target]] ~ ns(train_set[, 1], df = 4))  # Using 4 degrees of freedom for the spline
+cubic_spline_pred <- predict(cubic_spline_model, validation_set)
+cubic_spline_rmse <- sqrt(mean((validation_set[[target]] - cubic_spline_pred)^2))  # RMSE for Cubic Splines
+cubic_spline_rmse
+
+```
+
+
+
+```{r}
+# Natural Cubic Splines
+
+natural_spline_model <- lm(train_set[[target]] ~ ns(train_set[, 1], df = 5, Boundary.knots = c(min(train_set[, 1]), max(train_set[, 1]))))
+
+# Predict on validation data
+natural_spline_pred <- predict(natural_spline_model, newdata = validation_set)
+
+# Calculate RMSE
+natural_spline_rmse <- sqrt(mean((validation_set[[target]] - natural_spline_pred)^2))
+natural_spline_rmse
+
+```
+
+
+
+```{r}
+# Combine RMSE values of all models
+model_comparison_all <- data.frame(
+  Model = c("Lasso", "Ridge", "PCR", "PLS", "KNN", "Polynomial Regression", 
+            "Step Function Regression", "Cubic Splines", "Natural Cubic Splines"),
+  RMSE = c(lasso_rmse, ridge_rmse, pcr_rmse, pls_rmse, knn_rmse, poly_rmse, 
+           step_rmse, cubic_spline_rmse, natural_spline_rmse)
+)
+
+# Display the performance comparison table
+print(model_comparison_all)
+
+# Optionally, sort by RMSE to identify the best-performing model
+model_comparison_all <- model_comparison_all[order(model_comparison_all$RMSE), ]
+
+# Print sorted model comparison
+print(model_comparison_all)
+
+
+```
+
+### 1. Lasso Regression:
+- **RMSE**: 24.84  
+- **Strengths**: Good for feature selection and handling high-dimensional data.  
+- **Weaknesses**: Struggles with correlated features and non-linear relationships.  
+- **Key Takeaway**: Effective for high-dimensional datasets but may need further tuning.
+
+### 2. Ridge Regression:
+- **RMSE**: 24.96  
+- **Strengths**: Handles collinearity well, retains all predictors.  
+- **Weaknesses**: Does not perform feature selection, can increase model complexity.  
+- **Key Takeaway**: Useful when all predictors matter, but slightly worse than Lasso here.
+
+### 3. Principal Component Regression (PCR):
+- **RMSE**: 8.83 × 10⁻⁸  
+- **Strengths**: Reduces multicollinearity and overfitting by dimensionality reduction.  
+- **Weaknesses**: Loses interpretability.  
+- **Key Takeaway**: Excellent performance, highly effective with collinearity.
+
+### 4. Partial Least Squares (PLS):
+- **RMSE**: 1.69 × 10⁻⁹  
+- **Strengths**: Better than PCR, incorporates the response variable in dimensionality reduction.  
+- **Weaknesses**: Loss of interpretability.  
+- **Key Takeaway**: Performs exceptionally well, suitable for complex datasets.
+
+### 5. k-Nearest Neighbors (KNN):
+- **RMSE**: 15.72  
+- **Strengths**: Non-parametric and interpretable.  
+- **Weaknesses**: Computationally expensive and sensitive to the choice of `k`.  
+- **Key Takeaway**: Performs reasonably well for smaller datasets but less effective than linear models.
+
+### 6. Polynomial Regression (Degree 2):
+- **RMSE**: 35.80  
+- **Strengths**: Captures non-linear relationships.  
+- **Weaknesses**: Susceptible to overfitting and scaling issues.  
+- **Key Takeaway**: Did not perform well, possibly due to overfitting.
+
+### 7. Step Function Regression:
+- **RMSE**: 36.24  
+- **Strengths**: Can handle non-linear relationships with interval breaks.  
+- **Weaknesses**: Limited flexibility and poor handling of smooth transitions.  
+- **Key Takeaway**: Underperformed due to its limited flexibility.
+
+### 8. Cubic Splines Regression:
+- **RMSE**: 35.86  
+- **Strengths**: Flexible for non-linear relationships.  
+- **Weaknesses**: Risk of overfitting with too many knots.  
+- **Key Takeaway**: Performed decently but underperformed compared to PCR and PLS.
+
+### 9. Natural Cubic Splines:
+- **RMSE**: 35.88  
+- **Strengths**: More regularized than cubic splines.  
+- **Weaknesses**: Still prone to overfitting with many degrees of freedom.  
+- **Key Takeaway**: Similar to cubic splines, with slightly better regularization.
+
+### **Conclusion**:
+- **Best Performers**: **PLS** and **PCR** showed exceptional performance, with RMSEs near zero.  
+- **Moderate Performers**: **Lasso** and **Ridge** performed well for regularization and handling multicollinearity.  
+- **Less Effective**: **Polynomial Regression**, **Step Function Regression**, and **Cubic Splines** struggled with overfitting or failed to capture the data patterns effectively.
+
+
+### References
+1. Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning: Data Mining, Inference, and Prediction*. Springer.
+2. Kuhn, M., & Johnson, K. (2013). *Applied Predictive Modeling*. Springer.
+3. R Core Team (2023). *R: A Language and Environment for Statistical Computing*. R Foundation for Statistical Computing. Available at: [https://www.R-project.org](https://www.R-project.org)
+4. James, G., Witten, D., Hastie, T., & Tibshirani, R. (2013). *An Introduction to Statistical Learning with Applications in R*. Springer.
+5. glmnet R package: [https://cran.r-project.org/web/packages/glmnet/index.html](https://cran.r-project.org/web/packages/glmnet/index.html)
+6. pls R package: [https://cran.r-project.org/web/packages/pls/index.html](https://cran.r-project.org/web/packages/pls/index.html)
+7. UCI Machine Learning Repository: Blog Feedback Data Set. Available at: [https://archive.ics.uci.edu/ml/datasets/BlogFeedback](https://archive.ics.uci.edu/ml/datasets/BlogFeedback)
+8. UCI Machine Learning Repository: Abalone Data Set. Available at: [https://archive.ics.uci.edu/ml/datasets/Abalone](https://archive.ics.uci.edu/ml/datasets/Abalone)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

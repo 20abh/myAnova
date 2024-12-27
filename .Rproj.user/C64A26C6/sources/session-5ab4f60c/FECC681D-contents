@@ -1,0 +1,51 @@
+#' Calculate ANOVA Table
+#'
+#' This function performs a one-way ANOVA and computes the ANOVA table,
+#' including the sum of squares, degrees of freedom, mean squares, and F-statistic.
+#' @param data A data frame containing the dataset.
+#' @param response A string specifying the response variable (numeric).
+#' @param factor A string specifying the factor variable (categorical).
+#' @return A data frame containing the ANOVA table.
+#' @export
+calculate_anova <- function(data, response, factor) {
+  # Ensure response and factor exist in the data
+  if (!response %in% colnames(data) || !factor %in% colnames(data)) {
+    stop("Response or factor variable not found in the dataset.")
+  }
+
+  # Compute overall mean
+  overall_mean <- mean(data[[response]])
+
+  # Split data into groups
+  groups <- split(data[[response]], data[[factor]])
+
+  # Calculate sum of squares
+  ss_treatments <- sum(sapply(groups, length) * (sapply(groups, mean) - overall_mean)^2)
+  ss_error <- sum(unlist(lapply(groups, function(group) sum((group - mean(group))^2))))
+  ss_total <- ss_treatments + ss_error
+
+  # Degrees of freedom
+  k <- length(groups)  # Number of groups
+  n <- nrow(data)      # Total observations
+  df_treatments <- k - 1
+  df_error <- n - k
+
+  # Mean squares
+  ms_treatments <- ss_treatments / df_treatments
+  ms_error <- ss_error / df_error
+
+  # F-statistic
+  f_stat <- ms_treatments / ms_error
+
+  # Assemble ANOVA table
+  anova_table <- data.frame(
+    Source = c("Treatments", "Error", "Total"),
+    `Sum Sq` = c(ss_treatments, ss_error, ss_total),
+    df = c(df_treatments, df_error, NA),
+    `Mean Sq` = c(ms_treatments, ms_error, NA),
+    `F value` = c(f_stat, NA, NA),
+    check.names = FALSE
+  )
+
+  return(anova_table)
+}

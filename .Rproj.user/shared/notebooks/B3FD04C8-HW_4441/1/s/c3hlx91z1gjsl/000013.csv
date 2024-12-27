@@ -1,0 +1,2 @@
+"0","plot(y_test, lasso_predictions, main = ""Lasso: Actual vs Predicted"","
+"0","     xlab = ""Actual Values"", ylab = ""Predicted Values"", col = ""blue"", pch = 16)"

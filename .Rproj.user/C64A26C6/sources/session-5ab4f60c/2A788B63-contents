@@ -1,0 +1,19 @@
+#Test for anova_table
+test_that("anova_table returns a correct ANOVA table", {
+  data <- data.frame(
+    Factor = c("A", "A", "B", "B", "C", "C"),
+    Response = c(4, 5, 6, 5, 8, 7)
+  )
+
+  result <- anova_table(data, response = "Response", factor = "Factor")
+
+  expect_equal(nrow(result), 2)  # Two rows in the ANOVA table
+  expect_equal(result$Source[1], "Between Groups")
+  expect_equal(result$Source[2], "Within Groups")
+
+  expect_equal(round(result$SS[1], 2), 14.67) # Between-groups SS
+  expect_equal(round(result$SS[2], 2), 6.67)  # Within-groups SS
+
+  expect_equal(round(result$F[1], 2), 3.30)   # F-statistic
+  expect_true(!is.na(result$`p-value`[1]))    # p-value should not be NA
+})

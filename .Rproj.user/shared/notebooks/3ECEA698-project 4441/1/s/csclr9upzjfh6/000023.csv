@@ -1,0 +1,2 @@
+"0","plot(validation_set[[target]], pred_ridge, main = ""Predicted vs Actual (Ridge Regression)"", "
+"0","     xlab = ""Actual"", ylab = ""Predicted"", col = ""blue"", pch = 16)"

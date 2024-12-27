@@ -1,0 +1,26 @@
+#' Compute Degrees of Freedom and Mean Squares
+#'
+#' This function computes the degrees of freedom and mean squares between and within groups for ANOVA.
+#' @param data A data frame containing the dataset.
+#' @param factor A string specifying the name of the factor variable column.
+#' @param ss_between A numeric value for the sum of squares between groups.
+#' @param ss_within A numeric value for the sum of squares within groups.
+#' @return A list containing degrees of freedom (df_between, df_within) and mean squares (ms_between, ms_within).
+#' @examples
+#' data <- data.frame(Factor = c("A", "A", "B", "B", "C", "C"), Response = c(4, 5, 6, 5, 8, 7))
+#' ss <- compute_sum_of_squares(data, response = "Response", factor = "Factor")
+#' df_ms <- compute_degrees_and_means(data, factor = "Factor", ss_between = ss$SSB, ss_within = ss$SSW)
+#' df_ms
+#' @export
+compute_degrees_and_means <- function(data, factor, ss_between, ss_within) {
+  groups <- split(data[[factor]], data[[factor]]) # Group count
+  df_between <- length(groups) - 1
+  df_within <- nrow(data) - length(groups)
+
+  # Mean Squares
+  ms_between <- ss_between / df_between
+  ms_within <- ss_within / df_within
+
+  return(list(df_between = df_between, df_within = df_within,
+              ms_between = ms_between, ms_within = ms_within))
+}

@@ -1,0 +1,19 @@
+#' Test Hypothesis for ANOVA
+#'
+#' This function tests the null hypothesis for one-way ANOVA that all group means are equal.
+#' @param anova_table A data frame containing the ANOVA table (result from `calculate_anova`).
+#' @return A list containing the F-statistic, p-value, and degrees of freedom.
+#' @export
+test_hypothesis <- function(anova_table) {
+  if (!all(c("df", "F value") %in% colnames(anova_table))) {
+    stop("The ANOVA table does not contain the required columns.")
+  }
+
+  f_stat <- anova_table$`F value`[1]
+  df_treatments <- anova_table$df[1]
+  df_error <- anova_table$df[2]
+
+  p_value <- pf(f_stat, df_treatments, df_error, lower.tail = FALSE)
+
+  return(list(F_statistic = f_stat, p_value = p_value, df_treatments = df_treatments, df_error = df_error))
+}

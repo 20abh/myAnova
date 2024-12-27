@@ -1,0 +1,2 @@
+"0","plot(y_test, ridge_predictions, main = ""Ridge: Actual vs Predicted"","
+"0","     xlab = ""Actual Values"", ylab = ""Predicted Values"", col = ""blue"", pch = 16)"

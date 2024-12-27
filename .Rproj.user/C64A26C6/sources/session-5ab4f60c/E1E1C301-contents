@@ -1,0 +1,15 @@
+Package: myAnova
+Type: Package
+Title: Analysis of Variance (ANOVA) Tools for Statistical Analysis
+Version: 0.1.0
+Author:  Abdullah
+Maintainer:  <s129190@student.squ.edu.om>
+Description: Provides functions for performing Analysis of Variance (ANOVA), including computation of sum of squares, degrees of freedom, mean squares, and ANOVA table generation. Includes tools for hypothesis testing and model evaluation.
+License: GPL-3
+Encoding: UTF-8
+Imports: stats, utils
+Suggests: testthat
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+NeedsCompilation: no
+Packaged: 2024-12-25 12:45:55 UTC; saraa

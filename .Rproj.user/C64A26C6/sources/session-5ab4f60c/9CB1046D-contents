@@ -1,0 +1,8 @@
+test_that("test_hypothesis computes F-statistic and p-value correctly", {
+  data <- data.frame(Factor = c("A", "A", "B", "B", "C", "C"), Response = c(4, 5, 6, 5, 8, 7))
+  anova_result <- calculate_anova(data, response = "Response", factor = "Factor")
+
+  hypothesis <- test_hypothesis(anova_result)
+  expect_equal(round(hypothesis$F_statistic, 2), 3.30)
+  expect_true(hypothesis$p_value < 0.1)
+})

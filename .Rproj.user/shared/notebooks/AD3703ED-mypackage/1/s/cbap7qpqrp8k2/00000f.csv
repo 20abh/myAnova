@@ -1,0 +1,24 @@
+"0","library(usethis)"
+"0",""
+"0","# Create R scripts for the functions"
+"0","use_r(""check_assumptions"")"
+"2","[32m✔[39m Setting active project to [34m""C:/Users/HP/Desktop/myAnova""[39m.
+"
+"2","[31m☐[39m Modify ]8;;file://C:/Users/HP/Desktop/myAnova/R/check_assumptions.R[34mR/check_assumptions.R[39m]8;;.
+"
+"0","use_r(""perform_anova"")"
+"2","[31m☐[39m Modify ]8;;file://C:/Users/HP/Desktop/myAnova/R/perform_anova.R[34mR/perform_anova.R[39m]8;;.
+"
+"0","use_r(""generate_anova_table"")"
+"2","[31m☐[39m Modify ]8;;file://C:/Users/HP/Desktop/myAnova/R/generate_anova_table.R[34mR/generate_anova_table.R[39m]8;;.
+"
+"0","# Create test scripts for the functions"
+"0","use_test(""check_assumptions"")"
+"2","[31m☐[39m Modify ]8;;file://C:/Users/HP/Desktop/myAnova/tests/testthat/test-check_assumptions.R[34mtests/testthat/test-check_assumptions.R[39m]8;;.
+"
+"0","use_test(""perform_anova"")"
+"2","[31m☐[39m Modify ]8;;file://C:/Users/HP/Desktop/myAnova/tests/testthat/test-perform_anova.R[34mtests/testthat/test-perform_anova.R[39m]8;;.
+"
+"0","use_test(""generate_anova_table"")"
+"2","[31m☐[39m Modify ]8;;file://C:/Users/HP/Desktop/myAnova/tests/testthat/test-generate_anova_table.R[34mtests/testthat/test-generate_anova_table.R[39m]8;;.
+"

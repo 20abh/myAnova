@@ -1,0 +1,15 @@
+Package: myAnova
+Type: Package
+Title: Analysis of Variance (ANOVA) Tools for Statistical Analysis
+Version: 0.1.0
+Author:  Abdullah
+Maintainer:  Abdullah <s129190@student.squ.edu.om>
+Description: Provides functions for performing Analysis of Variance (ANOVA), including one-way ANOVA, hypothesis testing, and assumption checking. Includes tools for generating ANOVA tables, validating assumptions, and model evaluation.
+License: GPL-3
+Encoding: UTF-8
+Imports: stats, car, utils
+Suggests: testthat
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+NeedsCompilation: no
+Packaged: 2024-12-25 12:45:55 UTC; saraa

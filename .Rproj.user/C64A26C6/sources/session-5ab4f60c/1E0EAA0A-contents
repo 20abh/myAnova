@@ -1,0 +1,17 @@
+#Test for compute_degrees_and_means
+test_that("compute_degrees_and_means calculates correct degrees of freedom and mean squares", {
+  data <- data.frame(
+    Factor = c("A", "A", "B", "B", "C", "C"),
+    Response = c(4, 5, 6, 5, 8, 7)
+  )
+
+  ss <- compute_sum_of_squares(data, response = "Response", factor = "Factor")
+  df_ms <- compute_degrees_and_means(data, factor = "Factor",
+                                     ss_between = ss$SSB,
+                                     ss_within = ss$SSW)
+
+  expect_equal(df_ms$df_between, 2)   # Degrees of freedom between
+  expect_equal(df_ms$df_within, 3)   # Degrees of freedom within
+  expect_equal(round(df_ms$ms_between, 2), 7.33) # Mean square between
+  expect_equal(round(df_ms$ms_within, 2), 2.22)  # Mean square within
+})

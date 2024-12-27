@@ -1,0 +1,35 @@
+#' Create ANOVA Table
+#'
+#' This function generates an ANOVA table by computing the sum of squares, degrees of freedom, mean squares, F-statistic, and p-value.
+#' @param data A data frame containing the dataset.
+#' @param response A string specifying the name of the response variable column.
+#' @param factor A string specifying the name of the factor variable column.
+#' @return A data frame containing the ANOVA table with columns for Source, SS, df, MS, F, and p-value.
+#' @examples
+#' data <- data.frame(Factor = c("A", "A", "B", "B", "C", "C"), Response = c(4, 5, 6, 5, 8, 7))
+#' result <- anova_table(data, response = "Response", factor = "Factor")
+#' print(result)
+#' @export
+anova_table <- function(data, response, factor) {
+  # Compute sum of squares
+  ss <- compute_sum_of_squares(data, response, factor)
+
+  # Compute degrees of freedom and mean squares
+  df_ms <- compute_degrees_and_means(data, factor, ss$SSB, ss$SSW)
+
+  # F-statistic and p-value
+  f_stat <- df_ms$ms_between / df_ms$ms_within
+  p_value <- pf(f_stat, df_ms$df_between, df_ms$df_within, lower.tail = FALSE)
+
+  # Assemble ANOVA table
+  anova_table <- data.frame(
+    Source = c("Between Groups", "Within Groups"),
+    SS = c(ss$SSB, ss$SSW),
+    df = c(df_ms$df_between, df_ms$df_within),
+    MS = c(df_ms$ms_between, df_ms$ms_within),
+    F = c(f_stat, NA),
+    `p-value` = c(p_value, NA)
+  )
+
+  return(anova_table)
+}

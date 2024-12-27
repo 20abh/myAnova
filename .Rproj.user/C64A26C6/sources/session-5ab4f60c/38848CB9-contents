@@ -1,0 +1,14 @@
+
+
+#Test for compute_sum_of_squares
+test_that("compute_sum_of_squares calculates correct sum of squares", {
+  data <- data.frame(
+    Factor = c("A", "A", "B", "B", "C", "C"),
+    Response = c(4, 5, 6, 5, 8, 7)
+  )
+
+  ss <- compute_sum_of_squares(data, response = "Response", factor = "Factor")
+
+  expect_equal(round(ss$SSB, 2), 14.67) # Expected value for SSB
+  expect_equal(round(ss$SSW, 2), 6.67)  # Expected value for SSW
+})

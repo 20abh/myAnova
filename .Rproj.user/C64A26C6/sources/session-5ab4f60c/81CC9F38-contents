@@ -1,0 +1,29 @@
+#' Compute Sum of Squares
+#'
+#' This function computes the sum of squares between groups (SSB) and within groups (SSW) for a given dataset.
+#' @param data A data frame containing the dataset.
+#' @param response A string specifying the name of the response variable column.
+#' @param factor A string specifying the name of the factor variable column.
+#' @return A list containing the sum of squares between groups (SSB) and within groups (SSW).
+#' @examples
+#' data <- data.frame(Factor = c("A", "A", "B", "B", "C", "C"), Response = c(4, 5, 6, 5, 8, 7))
+#' ss <- compute_sum_of_squares(data, response = "Response", factor = "Factor")
+#' ss
+#' @export
+compute_sum_of_squares <- function(data, response, factor) {
+  if (!response %in% names(data) || !factor %in% names(data)) {
+    stop("Both response and factor must be columns in the dataset.")
+  }
+
+  # Split data by groups
+  groups <- split(data[[response]], data[[factor]])
+  overall_mean <- mean(data[[response]])
+
+  # Sum of Squares Between (SSB)
+  ss_between <- sum(sapply(groups, length) * (sapply(groups, mean) - overall_mean)^2)
+
+  # Sum of Squares Within (SSW)
+  ss_within <- sum(unlist(lapply(groups, function(group) sum((group - mean(group))^2))))
+
+  return(list(SSB = ss_between, SSW = ss_within))
+}

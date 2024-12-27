@@ -1,0 +1,24 @@
+#' Test ANOVA Assumptions
+#'
+#' This function checks the assumptions of normality and homogeneity of variances for ANOVA.
+#' @param data A data frame containing the dataset.
+#' @param response A string specifying the response variable (numeric).
+#' @param factor A string specifying the factor variable (categorical).
+#' @return A list containing the results of normality and homogeneity tests.
+#' @export
+test_anova_assumptions <- function(data, response, factor) {
+  library(car)
+
+  # Normality test (Shapiro-Wilk) on residuals
+  model <- aov(as.formula(paste(response, "~", factor)), data = data)
+  residuals <- residuals(model)
+  normality_test <- shapiro.test(residuals)
+
+  # Homogeneity of variances (Levene's Test)
+  homogeneity_test <- leveneTest(as.formula(paste(response, "~", factor)), data = data)
+
+  return(list(
+    normality_test = normality_test,
+    homogeneity_test = homogeneity_test
+  ))
+}

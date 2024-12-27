@@ -1,0 +1,372 @@
+---
+title: "project4441"
+output: html_document
+date: "2024-12-23"
+---
+```{r}
+
+# Load necessary libraries
+library(glmnet)
+library(caret)
+library(pls)
+library(splines)
+
+# 1. Random Seed Setup
+student_id <- 137138  # Replace with your student ID
+set.seed(student_id)
+
+# 2. Load and Prepare Data
+train_data <- read.csv("C:/Users/HP/Desktop/intro/blogData_train.csv", header = FALSE)
+test_data <- read.csv("C:/Users/HP/Desktop/intro/test.csv", header = FALSE)
+
+# Limit data to the first 10,000 rows
+train_data <- train_data[1:500, ]
+test_data <- test_data[1:500, ]
+
+# Handle Missing Data
+train_data[is.na(train_data)] <- 0
+test_data[is.na(test_data)] <- 0
+
+# Target is column 281, all other columns are predictors
+target <- 281
+predictors <- setdiff(1:ncol(train_data), target)  # All columns except target column
+
+
+
+
+
+
+# 3. Lasso Regression
+lasso_cv <- cv.glmnet(as.matrix(train_data[, predictors]), train_data[[target]], alpha = 1)
+best_lambda_lasso <- lasso_cv$lambda.min
+lasso_model <- glmnet(as.matrix(train_data[, predictors]), train_data[[target]], alpha = 1, lambda = best_lambda_lasso)
+pred_lasso <- predict(lasso_model, as.matrix(test_data[, predictors]))  # Predictions on test_data
+lasso_rmse <- sqrt(mean((test_data[[target]] - pred_lasso)^2))  # RMSE on test_data
+
+# 4. Ridge Regression
+ridge_cv <- cv.glmnet(as.matrix(train_data[, predictors]), train_data[[target]], alpha = 0)
+best_lambda_ridge <- ridge_cv$lambda.min
+ridge_model <- glmnet(as.matrix(train_data[, predictors]), train_data[[target]], alpha = 0, lambda = best_lambda_ridge)
+pred_ridge <- predict(ridge_model, as.matrix(test_data[, predictors]))  # Predictions on test_data
+ridge_rmse <- sqrt(mean((test_data[[target]] - pred_ridge)^2))  # RMSE on test_data
+
+# Print the results for Lasso and Ridge
+cat("Lasso RMSE:", lasso_rmse, "\n")
+cat("Ridge RMSE:", ridge_rmse, "\n")
+
+
+
+
+# 5. Dimensionality Reduction
+# Principal Component Regression (PCR)
+pcr_model <- pcr(train_data[[target]] ~ ., data = train_data, validation = "CV")
+pcr_pred <- predict(pcr_model, test_data, ncomp = which.min(pcr_model$validation$PRESS))  # Predictions on test_data
+pcr_rmse <- sqrt(mean((test_data[[target]] - pcr_pred)^2))  # RMSE on test_data
+
+
+# Partial Least Squares (PLS)
+pls_model <- plsr(train_data[[target]] ~ ., data = train_data, validation = "CV")
+pls_pred <- predict(pls_model, test_data, ncomp = which.min(pls_model$validation$PRESS))  # Predictions on test_data
+pls_rmse <- sqrt(mean((test_data[[target]] - pls_pred)^2))  # RMSE on test_data
+
+
+# Print the results
+cat("PCR RMSE:", pcr_rmse, "\n")
+cat("PLS RMSE:", pls_rmse, "\n")
+
+
+
+
+
+
+# 6. Model Comparison
+model_comparison <- data.frame(
+  Model = c("Lasso", "Ridge", "PCR", "PLS"),
+  RMSE = c(lasso_rmse, ridge_rmse, pcr_rmse, pls_rmse)
+)
+print(model_comparison)
+
+
+
+
+# 7. Additional Models
+# k-Nearest Neighbors
+knn_model <- train(train_data[, predictors], train_data[[target]], method = "knn", tuneLength = 10)
+knn_pred <- predict(knn_model, test_data[, predictors])
+knn_rmse <- sqrt(mean((test_data[[target]] - knn_pred)^2))
+cat("KNN RMSE:", knn_rmse, "\n")
+
+
+
+
+# Polynomial Regression 
+poly_model <- lm(train_data[[target]] ~ poly(train_data[, predictors[1]], degree = 2), data = train_data)
+poly_pred <- predict(poly_model, test_data)
+poly_rmse <- sqrt(mean((test_data[[target]] - poly_pred)^2))
+cat("Polynomial Regression RMSE:", poly_rmse, "\n")
+
+
+
+
+# Step Function Regression
+step_model <- lm(train_data[[target]] ~ cut(train_data[, predictors[1]], breaks = 5), data = train_data)
+step_pred <- predict(step_model, newdata = test_data)
+step_rmse <- sqrt(mean((test_data[[target]] - step_pred)^2))
+cat("Step Function Regression RMSE:", step_rmse, "\n")
+
+
+
+
+# Cubic Splines
+cubic_spline_model <- lm(train_data[[target]] ~ ns(train_data[, predictors[1]], df = 5), data = train_data)
+cubic_spline_pred <- predict(cubic_spline_model, newdata = test_data)
+cubic_spline_rmse <- sqrt(mean((test_data[[target]] - cubic_spline_pred)^2))
+cat("Cubic Splines RMSE:", cubic_spline_rmse, "\n")
+
+
+ 
+# Natural Cubic Splines
+natural_spline_model <- lm(train_data[[target]] ~ ns(train_data[, predictors[1]], df = 5, Boundary.knots = c(min(train_data[, predictors[1]]), max(train_data[, predictors[1]]))))
+natural_spline_pred <- predict(natural_spline_model, newdata = test_data)
+natural_spline_rmse <- sqrt(mean((test_data[[target]] - natural_spline_pred)^2))
+cat("Natural Cubic Splines RMSE:", natural_spline_rmse, "\n")
+
+
+
+ 
+# 8. Combine RMSE values of all models
+model_comparison_all <- data.frame(
+  Model = c("Lasso", "Ridge", "PCR", "PLS", "KNN", "Polynomial Regression", 
+            "Step Function Regression", "Cubic Splines", "Natural Cubic Splines"),
+  RMSE = c(lasso_rmse, ridge_rmse, pcr_rmse, pls_rmse, knn_rmse, poly_rmse, 
+           step_rmse, cubic_spline_rmse, natural_spline_rmse)
+)
+
+# Display the performance comparison table
+print(model_comparison_all)
+
+
+# Optionally, sort by RMSE to identify the best-performing model
+model_comparison_all <- model_comparison_all[order(model_comparison_all$RMSE), ]
+print(model_comparison_all)
+```
+
+```{r }
+
+# Set up environment and load libraries
+set.seed(137138) # Replace with your student ID
+library(tidyverse)
+library(glmnet)
+library(pls)
+library(class)
+library(MASS)
+library(splines)
+library(caret)
+```
+
+
+
+
+```{r}
+# Load the training and testing data
+trainTarget <- trainData[, 281]
+testTarget <- testData[, 281]
+
+# Define the predictors (all columns except column 281) for training and testing
+trainPredictors <- trainData[, -281]
+testPredictors <- testData[, -281]
+
+# Standardize predictors
+scaled_trainPredictors <- scale(trainPredictors)
+scaled_testPredictors <- scale(testPredictors,center = attr(scaled_trainPredictors, "scaled:center"),scale = attr(scaled_trainPredictors, "scaled:scale"))
+
+
+```
+
+```{r}
+
+set.seed(137138)  # Reproducibility
+
+```
+
+```{r}
+#Ridge Regrassion 
+
+# Load necessary library
+library(glmnet)
+
+# Load the dataset
+data <- read.csv("C:/Users/HP/Desktop/intro/blogData_train.csv", header = FALSE)
+```
+
+```{r , Data Splitting }
+split_ratio <- 0.8
+
+# Create indices for the training set
+train_indices <- sample(1:nrow(data), size = floor(split_ratio * nrow(data)))
+
+# Split the data
+training_set <- data[train_indices, ]
+testing_set <- data[-train_indices, ]
+
+# Check dimensions
+cat("Training Set Size:", nrow(training_set), "\n")
+cat("Testing Set Size:", nrow(testing_set), "\n")
+
+# Define the target and predictors
+trainTarget <- data[, 281]  # Target variable
+trainPredictors <- data[, -281]  # Predictor variables
+
+```
+
+```{r ,lasso 1}
+# Standardize the predictors
+scaled_trainPredictors <- scale(trainPredictors)
+
+# Set seed for reproducibility
+set.seed(137138)
+
+# Impute missing values with the mean
+scaled_trainPredictors <- apply(scaled_trainPredictors, 2, function(x) ifelse(is.na(x), mean(x, na.rm = TRUE), x))
+
+
+# Check for missing values
+sum(is.na(scaled_trainPredictors))  # Count of missing values in predictors
+sum(is.na(trainTarget))             # Count of missing values in target
+
+
+
+# Split the data into training and testing sets
+set.seed(137138)  # For reproducibility
+sample_index <- sample(1:nrow(data), size = 0.8 * nrow(data))  # 80% for training
+
+training_set <- data[sample_index, ]  # Training set
+testing_set <- data[-sample_index, ]  # Testing set
+
+# Prepare predictors (X) and response variable (Y) for training and testing
+train_x <- as.matrix(training_set[, -281])  # Predictor variables in training set
+train_y <- training_set[, 281]             # Response variable in training set
+
+test_x <- as.matrix(testing_set[, -281])   # Predictor variables in testing set
+test_y <- testing_set[, 281]               # Response variable in testing set
+
+
+# Perform 5-fold cross-validation on the training set to select the best λ
+cv_model <- cv.glmnet(train_x, train_y, alpha = 1, nfolds = 5)  # alpha = 1 for Lasso
+
+# Extract the best λ
+best_lambda <- cv_model$lambda.min
+
+# Fit the final Lasso model using the best λ
+lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = best_lambda)
+
+# Make predictions on the test data
+lasso_predictions <- predict(lasso_model, newx = test_x)
+
+# Evaluate performance on the test data
+lasso_mse <- mean((lasso_predictions - test_y)^2)  # Mean Squared Error
+cat("Best λ (lambda.min):", best_lambda, "\n")
+cat("Mean Squared Error on Test Data:", lasso_mse, "\n")
+
+# Perform cross-validation for Lasso regression (alpha = 1)
+cv_lasso_model <- cv.glmnet(train_x, train_y, alpha = 1, nfolds = 5)
+
+# Cross-validation plot for Lasso
+plot(cv_lasso_model)
+title("Cross-Validation for Lasso Regression", line = 2.5)
+
+```
+
+```{r, lasso 2}
+# Split data into training and testing sets
+train_data <- data[sample_index, ]  # Training data
+test_data <- data[-sample_index, ]  # Test data
+
+# Define predictor (X) and response (Y) for both training and testing sets
+train_features <- as.matrix(train_data[, -281])  # Predictor variables for training
+train_target <- train_data[, 281]                # Response variable for training
+
+test_features <- as.matrix(test_data[, -281])    # Predictor variables for testing
+test_target <- test_data[, 281]                  # Response variable for testing
+
+# Perform 5-fold cross-validation for selecting the optimal λ
+cv_lasso_model <- cv.glmnet(train_features, train_target, alpha = 1, nfolds = 5)  # Lasso regression (alpha=1)
+
+# Get the best lambda from cross-validation
+optimal_lambda <- cv_lasso_model$lambda.min
+
+# Fit the Lasso regression model with the best λ
+final_lasso_model <- glmnet(train_features, train_target, alpha = 1, lambda = optimal_lambda)
+
+# Make predictions on the test set
+predictions <- predict(final_lasso_model, newx = test_features)
+
+# Calculate the Mean Squared Error (MSE) for the predictions
+mse_value <- mean((predictions - test_target)^2)  # Mean Squared Error
+cat("Optimal λ (lambda.min):", optimal_lambda, "\n")
+cat("Mean Squared Error on Test Set:", mse_value, "\n")
+
+# Visualize the cross-validation results for Lasso regression
+plot(cv_lasso_model)
+title("Lasso Regression Cross-Validation Plot", line = 2.5)
+
+
+```
+
+
+```{r ,ridge 1}
+# Perform 5-fold cross-validation on the training set to select the best λ
+cv_model <- cv.glmnet(train_x, train_y, alpha = 0, nfolds = 5)  # alpha = 0 for Ridge
+
+# Extract the best λ
+best_lambda <- cv_model$lambda.min
+
+# Fit the final Ridge model using the best λ
+ridge_model <- glmnet(train_x, train_y, alpha = 0, lambda = best_lambda)
+
+# Make predictions on the test data
+ridge_predictions <- predict(ridge_model, newx = test_x)
+
+# Evaluate performance on the test data
+ridge_mse <- mean((ridge_predictions - test_y)^2)  # Mean Squared Error
+cat("Best λ (lambda.min):", best_lambda, "\n")
+cat("Mean Squared Error on Test Data:", ridge_mse, "\n")
+# Cross-validation plot
+plot(cv_model)
+title("Cross-Validation for Ridge Regression", line = 2.5)
+
+
+```
+
+```{r, ridge 2}
+# Perform 5-fold cross-validation on the training set to find the optimal λ
+ridge_cv_model <- cv.glmnet(train_x, train_y, alpha = 0, nfolds = 5)  # alpha = 0 for Ridge Regression
+
+# Get the optimal λ from cross-validation
+optimal_lambda_ridge <- ridge_cv_model$lambda.min
+
+# Fit the final Ridge regression model using the optimal λ
+ridge_final_model <- glmnet(train_x, train_y, alpha = 0, lambda = optimal_lambda_ridge)
+
+# Generate predictions on the test set
+ridge_predictions_test <- predict(ridge_final_model, newx = test_x)
+
+# Calculate Mean Squared Error (MSE) on the test set
+ridge_mse_test <- mean((ridge_predictions_test - test_y)^2)  # Mean Squared Error
+cat("Optimal λ (lambda.min) for Ridge:", optimal_lambda_ridge, "\n")
+cat("Test Data Mean Squared Error (MSE):", ridge_mse_test, "\n")
+
+# Plot the cross-validation results
+plot(ridge_cv_model)
+title("Ridge Regression Cross-Validation", line = 2.5)
+
+
+
+
+```
+
+
+
+
+
+
